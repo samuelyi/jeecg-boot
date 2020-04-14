@@ -486,7 +486,7 @@
                         days = this.result.day.cronLastSpecificDomDay + 'L';
                         break;
                     case '9':
-                        days = 'L-' + this.day.cronDaysBeforeEomMinus;
+                        days = 'L-' + this.result.day.cronDaysBeforeEomMinus;
                         break;
                     case '10':
                         days = this.result.day.cronDaysNearestWeekday+"W";
@@ -630,7 +630,7 @@
     }
 </script>
 
-<style lang="scss">
+<style lang="less">
     .card-container {
         background: #fff;
         overflow: hidden;
@@ -678,7 +678,7 @@
         }
     }
 </style>
-<style lang="scss" scoped>
+<style lang="less" scoped>
     .container-widthEn{
         width: 755px;
     }

@@ -4,10 +4,12 @@
     :multiple="true"
     :action="uploadAction"
     :headers="headers"
-    :data="{'isup':1,'bizPath':bizPath}"
+    :data="{'biz':bizPath}"
     :fileList="fileList"
     :beforeUpload="beforeUpload"
-    @change="handleChange">
+    @change="handleChange"
+    :disabled="disabled"
+    :returnUrl="returnUrl">
     <a-button>
       <a-icon type="upload" />{{ text }}
     </a-button>
@@ -18,6 +20,7 @@
 
   import Vue from 'vue'
   import { ACCESS_TOKEN } from "@/store/mutation-types"
+  import { getFileAccessHttpUrl } from '@/api/manage';
 
   const FILE_TYPE_ALL = "all"
   const FILE_TYPE_IMG = "image"
@@ -37,9 +40,10 @@
     data(){
       return {
         uploadAction:window._CONFIG['domianURL']+"/sys/common/upload",
-        urlDownload:window._CONFIG['domianURL'] + "/sys/common/download/",
+        urlDownload:window._CONFIG['staticDomainURL'],
         headers:{},
-        fileList: []
+        fileList: [],
+        newFileList: [],
       }
     },
     props:{
@@ -60,19 +64,44 @@
         default:"temp"
       },
       value:{
-        type:String,
+        type:[String,Array],
         required:false
       },
+      // update-begin- --- author:wangshuai ------ date:20190929 ---- for:Jupload组件增加是否能够点击
+      disabled:{
+        type:Boolean,
+        required:false,
+        default: false
+      },
+      // update-end- --- author:wangshuai ------ date:20190929 ---- for:Jupload组件增加是否能够点击
       //此属性被废弃了
       triggerChange:{
         type: Boolean,
         required: false,
         default: false
       },
+      /**
+       * update -- author:lvdandan -- date:20190219 -- for:Jupload组件增加是否返回url，
+       * true：仅返回url
+       * false：返回fileName filePath fileSize
+       */
+      returnUrl:{
+        type:Boolean,
+        required:false,
+        default: true
+      },
     },
     watch:{
       value(val){
-        this.initFileList(val)
+        if (val instanceof Array) {
+          if(this.returnUrl){
+            this.initFileList(val.join(','))
+          }else{
+            this.initFileListArr(val);
+          }
+        } else {
+          this.initFileList(val)
+        }
       }
     },
     created(){
@@ -81,18 +110,43 @@
     },
 
     methods:{
+      initFileListArr(val){
+        if(!val || val.length==0){
+          this.fileList = [];
+          return;
+        }
+        let fileList = [];
+        for(var a=0;a<val.length;a++){
+          fileList.push({
+            uid:uidGenerator(),
+            name:val[a].fileName,
+            status: 'done',
+            url: val[a].filePath,
+            response:{
+              status:"history",
+              message:val[a].filePath
+            }
+          })
+        }
+        this.fileList = fileList
+      },
       initFileList(paths){
         if(!paths || paths.length==0){
-          return [];
+          //return [];
+          // update-begin- --- author:os_chengtgen ------ date:20190729 ---- for:issues:326,Jupload组件初始化bug
+          this.fileList = [];
+          return;
+          // update-end- --- author:os_chengtgen ------ date:20190729 ---- for:issues:326,Jupload组件初始化bug
         }
         let fileList = [];
         let arr = paths.split(",")
         for(var a=0;a<arr.length;a++){
+          let url = getFileAccessHttpUrl(arr[a],this.urlDownload,"http");
           fileList.push({
             uid:uidGenerator(),
             name:getFileName(arr[a]),
             status: 'done',
-            url: this.urlDownload+arr[a],
+            url: url,
             response:{
               status:"history",
               message:arr[a]
@@ -140,12 +194,13 @@
           if(info.file.response.success){
             fileList = fileList.map((file) => {
               if (file.response) {
-                file.url = this.urlDownload+file.response.message;
+                let reUrl = file.response.message;
+                file.url = getFileAccessHttpUrl(reUrl,this.urlDownload,"http");
               }
               return file;
             });
           }
-          this.$message.success(`${info.file.name} 上传成功!`);
+          //this.$message.success(`${info.file.name} 上传成功!`);
         }else if (info.file.status === 'error') {
           this.$message.error(`${info.file.name} 上传失败.`);
         }else if(info.file.status === 'removed'){
@@ -153,7 +208,26 @@
         }
         this.fileList = fileList
         if(info.file.status==='done' || info.file.status === 'removed'){
-          this.handlePathChange()
+          //returnUrl为true时仅返回文件路径
+          if(this.returnUrl){
+            this.handlePathChange()
+          }else{
+            //returnUrl为false时返回文件名称、文件路径及文件大小
+            fileList = fileList.filter((file) => {
+              if (file.response) {
+                return file.response.success === true;
+              }
+              return false;
+            }).map((file) => {
+              var fileJson = {
+                fileName:file.name,
+                filePath:file.response.message,
+                fileSize:file.size
+              };
+              this.newFileList.push(fileJson);
+              this.$emit('change', this.newFileList);
+            });
+          }
         }
       },
       handleDelete(file){

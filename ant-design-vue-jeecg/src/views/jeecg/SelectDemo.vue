@@ -9,7 +9,7 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="性别">
-              <j-dict-select-tag v-model="formData.sex" title="性别" dictCode="sex"/>
+              <j-dict-select-tag v-model="formData.sex" title="性别" dictCode="sex" placeholder="请选择性别"/>
             <!--  <j-dict-select-tag title="性别" dictCode="sex" disabled/>-->
             </a-form-item>
           </a-col>
@@ -39,8 +39,8 @@
         <!--  部门选择控件 -->
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item label="选择部门">
-              <j-select-depart v-decorator="['departId']" :trigger-change="true"></j-select-depart>
+            <a-form-item label="选择部门 自定义返回值">
+              <j-select-depart v-decorator="['departId']" :trigger-change="true" customReturnField="departName"></j-select-depart>
             </a-form-item>
           </a-col>
           <a-col :span="12">选中的部门ID(v-decorator):{{ getDepartIdValue() }}</a-col>
@@ -49,30 +49,40 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="选择部门">
-              <j-select-depart v-model="departId"></j-select-depart>
+              <j-select-depart v-model="departId" :multi="true"></j-select-depart>
             </a-form-item>
           </a-col>
           <a-col :span="12">选中的部门ID(v-model):{{ departId }}</a-col>
         </a-row>
 
-        <!--  用户选择控件 -->
+        <!--  通过部门选择用户控件 -->
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="选择用户">
-              <j-select-user-by-dep v-model="userRealName"></j-select-user-by-dep>
+              <j-select-user-by-dep v-model="userIds" :multi="true"></j-select-user-by-dep>
             </a-form-item>
           </a-col>
-          <a-col :span="12">选中的用户(v-model):{{ userRealName }}</a-col>
+          <a-col :span="12">选中的用户(v-model):{{ userIds }}</a-col>
         </a-row>
 
         <!--  用户选择控件 -->
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="选择用户">
-              <j-select-multi-user v-model="multiUser"></j-select-multi-user>
+              <j-select-multi-user v-model="multiUser" ></j-select-multi-user>
             </a-form-item>
           </a-col>
           <a-col :span="12">选中的用户(v-model):{{ multiUser }}</a-col>
+        </a-row>
+
+        <!-- 角色选择 -->
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="选择角色">
+              <j-select-role v-model="formData.selectRole"/>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">选中值：{{ formData.selectRole}}</a-col>
         </a-row>
 
         <!--  JCheckbox -->
@@ -166,34 +176,26 @@
         <a-row :gutter="24">
           <a-col>
 
-            <a-form-item label="最大化弹窗">
-              <a-button @click="()=>modal.visible=true">最大化弹窗</a-button>
+            <a-form-item label="JModal弹窗">
+              <a-button style="margin-right: 8px;" @click="()=>modal.visible=true">点击弹出JModal</a-button>
+              <span style="margin-right: 8px;">全屏化：<a-switch v-model="modal.fullscreen"/></span>
+              <span style="margin-right: 8px;">允许切换全屏：<a-switch v-model="modal.switchFullscreen"/></span>
+
             </a-form-item>
 
-            <a-modal
-              :visible="modal.visible"
-              :width="modal.width"
-              :style="modal.style"
-              @ok="()=>modal.visible=false"
-              @cancel="()=>modal.visible=false">
-
-              <template slot="title">
-                <div style="width: 100%;height:20px;padding-right:32px;">
-                  <div style="float: left;">{{ modal.title }}</div>
-                  <div style="float: right;">
-                    <a-button
-                      icon="fullscreen"
-                      style="width:56px;height:100%;border:0"
-                      @click="handleClickToggleFullScreen"/>
-                  </div>
-                </div>
-              </template>
+            <j-modal
+              :visible.sync="modal.visible"
+              :width="1200"
+              :title="modal.title"
+              :fullscreen.sync="modal.fullscreen"
+              :switchFullscreen="modal.switchFullscreen"
+            >
 
               <template v-for="(i,k) of 30">
                 <p :key="k">这是主体内容，高度是自适应的</p>
               </template>
 
-            </a-modal>
+            </j-modal>
 
           </a-col>
         </a-row>
@@ -207,23 +209,90 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="树字典">
-              <j-tree-dict parentCode="B01" />
+              <j-tree-dict v-model="formData.treeDict" placeholder="请选择树字典" parentCode="A01" />
             </a-form-item>
           </a-col>
-          <a-col :span="12"></a-col>
+          <a-col :span="12">选中的值(v-model)：{{ formData.treeDict }}</a-col>
+        </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="下拉树选择">
+              <j-tree-select
+                v-model="formData.treeSelect"
+                placeholder="请选择菜单"
+                dict="sys_permission,name,id"
+                pidField="parent_id"
+                pidValue=""
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :spapn="12">选中的值(v-model)：{{ formData.treeSelect }}</a-col>
+        </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="下拉树多选">
+              <j-tree-select
+                v-model="formData.treeSelectMultiple"
+                placeholder="请选择菜单"
+                dict="sys_permission,name,id"
+                pidField="parent_id"
+                pidValue=""
+                multiple
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :spapn="12">选中的值(v-model)：{{ formData.treeSelectMultiple }}</a-col>
         </a-row>
 
         <!-- VueCron -->
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="cron表达式">
-              <a-input @click="openModal" placeholder="corn表达式" v-model="cron.label" readOnly >
-                <a-icon slot="prefix" type="schedule" title="corn控件"/>
-              </a-input>
-              <VueCron ref="innerVueCron" :data="cron" @change="changeCron" ></VueCron>
+              <j-cron ref="innerVueCron" v-decorator="['cronExpression', { initialValue: '* * * * * ? *' }]" @change="setCorn"></j-cron>
             </a-form-item>
           </a-col>
         </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="高级查询">
+              <j-super-query :fieldList="superQuery.fieldList" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="高级查询（自定义按钮）">
+              <j-super-query :fieldList="superQuery.fieldList">
+                <!-- 直接在内部写一个按钮即可，点击事件自动添加 -->
+                <a-button type="primary" ghost icon="clock-circle">高级查询</a-button>
+              </j-super-query>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="图片上传">
+              <j-image-upload v-model="imgList"></j-image-upload>
+            </a-form-item>
+          </a-col>
+          <a-col :spapn="12">选中的值(v-model)：{{ imgList }}</a-col>
+        </a-row>
+        <a-row :gutter="24" style="margin-top: 65px;margin-bottom:50px;">
+          <a-col :span="12">
+            <a-form-item label="文件上传">
+              <j-upload v-model="fileList"></j-upload>
+            </a-form-item>
+          </a-col>
+          <a-col :spapn="12">
+            选中的值(v-model)：
+            <j-ellipsis :value="fileList" :length="30" v-if="fileList.length>0"/>
+          </a-col>
+        </a-row>
+
       </a-form>
     </div>
 
@@ -236,6 +305,7 @@
   import JSelectDepart from '@/components/jeecgbiz/JSelectDepart'
   import JSelectUserByDep from '@/components/jeecgbiz/JSelectUserByDep'
   import JSelectMultiUser from '@/components/jeecgbiz/JSelectMultiUser'
+  import JSelectRole from '@/components/jeecgbiz/JSelectRole'
   import JCheckbox from '@/components/jeecg/JCheckbox'
   import JCodeEditor from '@/components/jeecg/JCodeEditor'
   import JDate from '@/components/jeecg/JDate'
@@ -245,29 +315,37 @@
   import JSlider from '@/components/jeecg/JSlider'
   import JSelectMultiple from '@/components/jeecg/JSelectMultiple'
   import JTreeDict from "../../components/jeecg/JTreeDict.vue";
-  import VueCron from "./modules/VueCronModal.vue";
+  import JCron from "@/components/jeecg/JCron.vue";
+  import JTreeSelect from '@/components/jeecg/JTreeSelect'
+  import JSuperQuery from '@/components/jeecg/JSuperQuery'
+  import JUpload from '@/components/jeecg/JUpload'
+  import JImageUpload from '@/components/jeecg/JImageUpload'
+
   export default {
     name: 'SelectDemo',
     components: {
+      JImageUpload,
+      JUpload,
       JTreeDict,
       JDictSelectTag,
       JSelectDepart,
       JSelectUserByDep,
       JSelectMultiUser,
+      JSelectRole,
       JCheckbox,
       JCodeEditor,
       JDate, JEditor, JEllipsis, JGraphicCode, JSlider, JSelectMultiple,
-      VueCron
+      JCron, JTreeSelect, JSuperQuery
     },
     data() {
       return {
         selectList: [],
         selectedDepUsers: '',
-        formData:{},
+        formData: {},
         form: this.$form.createForm(this),
         departId: '4f1765520d6346f9bd9c79e2479e5b12,57197590443c44f083d42ae24ef26a2c',
-        userRealName: '',
-        multiUser: '',
+        userIds: 'admin',
+        multiUser: 'admin,jeecg',
         jcheckbox: {
           values: 'spring,jeecgboot',
           options: [
@@ -310,14 +388,19 @@ sayHi('hello, world!')`
         modal: {
           title: '这里是标题',
           visible: false,
-          width: '100%',
-          style: { top: '20px' },
-          fullScreen: true
+          fullscreen: true,
+          switchFullscreen: true,
         },
-        cron: {
-          label: '',
-          value: {}
-        }
+        cron: '',
+        superQuery: {
+          fieldList: [
+            { type: 'input', value: 'name', text: '姓名', },
+            { type: 'select', value: 'sex', text: '性别', dictCode: 'sex' },
+            { type: 'number', value: 'age', text: '年龄', }
+          ]
+        },
+        fileList:[],
+        imgList:[],
       }
     },
     computed: {
@@ -360,26 +443,11 @@ sayHi('hello, world!')`
       handleJSliderSuccess(value) {
         this.jslider.value = value
       },
-      /** 切换全屏显示 */
-      handleClickToggleFullScreen() {
-        let mode = !this.modal.fullScreen
-        if (mode) {
-          this.modal.width = '100%'
-          this.modal.style.top = '20px'
-        } else {
-          this.modal.width = '1200px'
-          this.modal.style.top = '50px'
-        }
-        this.modal.fullScreen = mode
-      },
-      openModal(){
-        this.$refs.innerVueCron.show()
-      },
-      changeCron(val){
-        this.cron=val;
-        console.log(val);
+      setCorn(data){
+        this.$nextTick(() => {
+          this.form.cronExpression = data;
+        })
       }
-
     }
   }
 </script>
